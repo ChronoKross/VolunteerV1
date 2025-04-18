@@ -1,55 +1,32 @@
 import { createClient } from '@/utils/supabase/server';
 
-export async function getTest() {
-  const client = await createClient();
-  console.log('fetching......');
 
-  const { data, error } = await client
-    .from('test') // Correct schema and table name
-    .select('*'); 
+export async function volunteerEmployee(userId: string) {
+  const client = await createClient()
 
-  if (error) {
-    console.error('Supabase Error in getTest:', error);
-    throw new Error(error.message || 'Failed to add employee');
-  }
+  // Get the current max position
+  const { data: maxData, error: maxErr } = await client
+    .from('employees')
+    .select('position')
+    .order('position', { ascending: false })
+    .limit(1)
+    .single()
 
-  console.log('All good!:', data);
-  return data;
+  if (maxErr) throw new Error('Failed to fetch max position')
+
+  const maxPosition = maxData?.position ?? 0
+
+  // Move user to the back of the queue
+  const { error: updateErr } = await client
+    .from('employees')
+    .update({ position: maxPosition + 1 })
+    .eq('id', userId)
+
+  if (updateErr) throw new Error('Failed to update employee position')
+
+  return { newPosition: maxPosition + 1 }
 }
 
-export async function postTest( name: string) {
-  const client = await createClient();
-  console.log('fetching......');
-
-  const { data, error } = await client
-    .from('test') // Correct schema and table name
-    .insert([{ name }]); // Insert employee data
-
-  if (error) {
-    console.error('Supabase Error in getTest:', error);
-    throw new Error(error.message || 'Failed to add employee');
-  }
-
-  console.log('All good!:', data);
-  return data;
-}
-
-export async function addEmployee(username: string) {
-  const client = await createClient();
-  console.log('Attempting to insert employee:', { username });
-
-  const { data, error } = await client
-    .from('employees') // Correct schema and table name
-    .insert([{ username }]); // Insert employee data
-
-  if (error) {
-    console.error('Supabase Error in addEmployee:', error);
-    throw new Error(error.message || 'Failed to add employee');
-  }
-
-  console.log('Employee added successfully:', data);
-  return data;
-}
 
 // Fetch all employees
 export async function getEmployees() {

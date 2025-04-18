@@ -1,86 +1,48 @@
-"use client"
+'use client'
 
-import { useState } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { useTheme } from "next-themes"
-import { motion, AnimatePresence } from "framer-motion"
-import { Clock } from "lucide-react"
-import { ThemeSwitcher } from "@/components/theme-switcher"
-
-// Define the employee type based on the schema
-interface Employee {
-  id: string
-  name: string
-  profile_pic: string
-  job_title: string
-  volunteerHours: number // Calculated from timeline data
-}
-
-// Sample data - in a real app, this would come from your database
-const sampleEmployees: Employee[] = [
-  {
-    id: "1",
-    name: "Alex Johnson",
-    profile_pic: "/placeholder.svg?height=40&width=40",
-    job_title: "Software Engineer",
-    volunteerHours: 45,
-  },
-  {
-    id: "2",
-    name: "Sam Taylor",
-    profile_pic: "/placeholder.svg?height=40&width=40",
-    job_title: "Product Manager",
-    volunteerHours: 12,
-  },
-  {
-    id: "3",
-    name: "Jordan Smith",
-    profile_pic: "/placeholder.svg?height=40&width=40",
-    job_title: "UX Designer",
-    volunteerHours: 28,
-  },
-  {
-    id: "4",
-    name: "Casey Williams",
-    profile_pic: "/placeholder.svg?height=40&width=40",
-    job_title: "Marketing Specialist",
-    volunteerHours: 5,
-  },
-  {
-    id: "5",
-    name: "Riley Brown",
-    profile_pic: "/placeholder.svg?height=40&width=40",
-    job_title: "Data Analyst",
-    volunteerHours: 32,
-  },
-]
-
-// Maximum volunteer hours for color saturation calculation
-const MAX_HOURS = 50
+import { useTheme } from 'next-themes'
+import { useQueue } from '@/hooks/useQueue'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
+import { Clock } from 'lucide-react'
+import { ThemeSwitcher } from '@/components/theme-switcher'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function EmployeeStack() {
-  const [employees, setEmployees] = useState<Employee[]>(sampleEmployees)
-  const { theme, setTheme } = useTheme()
+  const employees = useQueue()
+  const { theme } = useTheme()
 
-  // Function to move an employee to the bottom of the stack
-  const moveToBottom = (id: string) => {
-    setEmployees((prev) => {
-      const employee = prev.find((emp) => emp.id === id)
-      if (!employee) return prev
-
-      return [...prev.filter((emp) => emp.id !== id), employee]
-    })
-  }
-
-  // Calculate color saturation based on volunteer hours
   const getColorSaturation = (hours: number) => {
-    const percentage = Math.min(hours / MAX_HOURS, 1) * 100
+    const percentage = Math.min(hours / 50, 1) * 100
     return percentage
   }
 
+  const volunteer = async (userId: string) => {
+  try {
+    const res = await fetch('/api/employee', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'volunteer',
+        userId,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'Unknown error');
+
+    console.log('✅ Volunteer success:', data);
+  } catch (err) {
+    console.error('❌ Volunteer failed:', err);
+    // You could throw in a toast or visual indicator here
+  }
+};
+ 
+
+
   return (
-    <div className=" dark:from-slate-900 dark:via-blue-950 dark:to-violet-950">
+    <div className="dark:from-slate-900 dark:via-blue-950 dark:to-violet-950">
       <div className="w-full max-w-md mx-auto space-y-6">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Employee Volunteer Stack</h1>
@@ -90,7 +52,7 @@ export default function EmployeeStack() {
         <div className="space-y-3">
           <AnimatePresence>
             {employees.map((employee, index) => {
-              const saturation = getColorSaturation(employee.volunteerHours)
+              const saturation = getColorSaturation(employee.totalVolunteeredHours)
 
               return (
                 <motion.div
@@ -109,8 +71,8 @@ export default function EmployeeStack() {
                 >
                   <Button
                     variant="outline"
+                    onClick={() => volunteer(employee.id)}
                     className="w-full flex items-center justify-between p-4 h-auto text-left bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300"
-                    onClick={() => moveToBottom(employee.id)}
                   >
                     <div className="flex items-center gap-3">
                       <Avatar>
@@ -143,7 +105,7 @@ export default function EmployeeStack() {
                       }}
                     >
                       <Clock className="h-4 w-4" />
-                      <span className="text-sm font-medium">{employee.volunteerHours} hrs</span>
+                      <span className="text-sm font-medium">{employee.totalVolunteeredHours} hrs</span>
                     </div>
                   </Button>
                 </motion.div>

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getEmployees, getEmployeeById, addEmployee } from '@/lib/dbHelpers';
+import { getEmployees, getEmployeeById, volunteerEmployee } from '@/lib/dbHelpers';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,12 +8,12 @@ export async function GET(request: Request) {
 
   try {
     if (action === 'getEmployees') {
-      const employees = await getEmployees(); // Ensure this uses the "public.employees" table
+      const employees = await getEmployees();
       return NextResponse.json(employees);
     }
 
     if (action === 'getEmployeeById' && id) {
-      const employee = await getEmployeeById(id); // Ensure this uses the "public.employees" table
+      const employee = await getEmployeeById(id);
       return NextResponse.json(employee);
     }
 
@@ -27,15 +27,15 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, username } = body;
+    const { action, userId } = body;
 
-    if (action === 'addEmployee') {
-      if (!username) {
-        return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (action === 'volunteer') {
+      if (!userId) {
+        return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
       }
 
-      const newEmployee = await addEmployee(username); // Ensure this uses the "public.employees" table
-      return NextResponse.json(newEmployee);
+      const result = await volunteerEmployee(userId);
+      return NextResponse.json({ success: true, ...result });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
