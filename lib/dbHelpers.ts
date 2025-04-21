@@ -1,8 +1,9 @@
-import { createClient } from '@/utils/supabase/server';
 
 
-export async function volunteerEmployee(userId: string) {
-  const client = await createClient()
+
+
+export async function volunteerEmployee(client:any, userId: string) {
+  
 
   // Get the current max position
   const { data: maxData, error: maxErr } = await client
@@ -29,8 +30,8 @@ export async function volunteerEmployee(userId: string) {
 
 
 // Fetch all employees
-export async function getEmployees() {
-  const client = await createClient();
+export async function getEmployees(client:any) {
+  
   console.log('Fetching all employees...');
 
   const { data, error } = await client
@@ -47,8 +48,8 @@ export async function getEmployees() {
 }
 
 // Fetch a single employee by ID
-export async function getEmployeeById(id: string) {
-  const client = await createClient();
+export async function getEmployeeById(client:any, id: string) {
+  
   console.log(`Fetching employee with ID: ${id}`);
 
   const { data, error } = await client
@@ -67,57 +68,57 @@ export async function getEmployeeById(id: string) {
 }
 
 // Fetch all shifts for a specific employee
-export async function getShiftsByEmployeeId(employeeId: number) {
-  const client = await createClient();
-  console.log(`Fetching shifts for employee ID: ${employeeId}`);
+// export async function getShiftsByEmployeeId(employeeId: number) {
+  
+//   console.log(`Fetching shifts for employee ID: ${employeeId}`);
 
-  const { data, error } = await client
-    .from('employees') // Correct schema and table name
-    .select('shift, start_time, end_time') // Fetch only shift-related columns
-    .eq('id', employeeId);
+//   const { data, error } = await client
+//     .from('employees') // Correct schema and table name
+//     .select('shift, start_time, end_time') // Fetch only shift-related columns
+//     .eq('id', employeeId);
 
-  if (error) {
-    console.error('Error fetching shifts:', error);
-    throw new Error(error.message || 'Failed to fetch shifts');
-  }
+//   if (error) {
+//     console.error('Error fetching shifts:', error);
+//     throw new Error(error.message || 'Failed to fetch shifts');
+//   }
 
-  console.log('Shifts fetched successfully:', data);
-  return data || [];
-}
+//   console.log('Shifts fetched successfully:', data);
+//   return data || [];
+// }
 
 // Add a new shift for an employee
-export async function addShift(employeeId: number, shift: string, start_time: string, end_time: string) {
-  const client = await createClient();
-  console.log('Attempting to add shift:', { employeeId, shift, start_time, end_time });
+// export async function addShift(employeeId: number, shift: string, start_time: string, end_time: string) {
+  
+//   console.log('Attempting to add shift:', { employeeId, shift, start_time, end_time });
 
-  const { data, error } = await client
-    .from('employees') // Correct schema and table name
-    .update({ shift, start_time, end_time }) // Update shift-related columns
-    .eq('id', employeeId);
+//   const { data, error } = await client
+//     .from('employees') // Correct schema and table name
+//     .update({ shift, start_time, end_time }) // Update shift-related columns
+//     .eq('id', employeeId);
 
-  if (error) {
-    console.error('Supabase Error in addShift:', error);
-    throw new Error(error.message || 'Failed to add shift');
-  }
+//   if (error) {
+//     console.error('Supabase Error in addShift:', error);
+//     throw new Error(error.message || 'Failed to add shift');
+//   }
 
-  console.log('Shift added successfully:', data);
-  return data;
-}
+//   console.log('Shift added successfully:', data);
+//   return data;
+// }
 
-// Fetch all shifts
-export async function getAllShifts() {
-  const client = await createClient();
-  console.log('Fetching all shifts...');
+//  Fetch all shifts
+// export async function getAllShifts() {
+  
+//   console.log('Fetching all shifts...');
 
-  const { data, error } = await client
-    .from('employees') // Correct schema and table name
-    .select('id, username, shift, start_time, end_time'); // Fetch shift-related columns
+//   const { data, error } = await client
+//     .from('employees') // Correct schema and table name
+//     .select('id, username, shift, start_time, end_time'); // Fetch shift-related columns
 
-  if (error) {
-    console.error('Error fetching shifts:', error);
-    throw new Error(error.message || 'Failed to fetch shifts');
-  }
+//   if (error) {
+//     console.error('Error fetching shifts:', error);
+//     throw new Error(error.message || 'Failed to fetch shifts');
+//   }
 
-  console.log('Shifts fetched successfully:', data);
-  return data;
-}
+//   console.log('Shifts fetched successfully:', data);
+//   return data;
+// }
