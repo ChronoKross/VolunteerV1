@@ -11,6 +11,7 @@ export type Database = {
     Tables: {
       employees: {
         Row: {
+          auth_id: string | null
           created_at: string
           email: string | null
           id: string
@@ -23,6 +24,7 @@ export type Database = {
           wage: number | null
         }
         Insert: {
+          auth_id?: string | null
           created_at?: string
           email?: string | null
           id?: string
@@ -35,6 +37,7 @@ export type Database = {
           wage?: number | null
         }
         Update: {
+          auth_id?: string | null
           created_at?: string
           email?: string | null
           id?: string

@@ -18,12 +18,17 @@ export async function volunteerEmployee(client:any, userId: string) {
   const maxPosition = maxData?.position ?? 0
 
   // Move user to the back of the queue
-  const { error: updateErr } = await client
+  const { data: updateData, error: updateErr } = await client
     .from('employees')
     .update({ position: maxPosition + 1 })
     .eq('id', userId)
+    .select()
 
   if (updateErr) throw new Error('Failed to update employee position')
+  if (!updateData || updateData.length === 0) {
+    throw new Error('Not authorized to volunteer (RLS policy blocked)');
+  }
+  
 
   return { newPosition: maxPosition + 1 }
 }
