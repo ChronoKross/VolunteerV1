@@ -138,7 +138,8 @@ export const signOutAction = async () => {
 export async function signInWithGoogleAction() {
   "use server";
   const supabase = await createClient();
-  const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://volunteer-v1.vercel.app/" || "http://localhost:4000";
+  console.log(process.env.NEXT_PUBLIC_SITE_URL);
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
