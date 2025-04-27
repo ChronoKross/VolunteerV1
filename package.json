@@ -4,7 +4,8 @@
     "update-types": "npx supabase gen types typescript --project-id soazrczvrrxkoyunuakq --schema public > types/supabase.ts",
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "push": "git add . && git commit -m"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.4",
