@@ -13,7 +13,7 @@ export function useOAuth() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      // options: { redirectTo: "YOUR_REDIRECT_URL" } // Optional: set redirect URL
+      options: { redirectTo: "https://volunteer-v1.vercel.app/" } // Optional: set redirect URL
     });
     if (error) setError(error.message);
     setLoading(false);
