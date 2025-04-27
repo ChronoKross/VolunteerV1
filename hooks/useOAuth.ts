@@ -11,9 +11,10 @@ export function useOAuth() {
   const signInWithProvider = async (provider: Provider) => {
     setLoading(true);
     setError(null);
+    const redirectTo = `${window.location.origin}/auth/callback`;
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
-      options: { redirectTo: "https://volunteer-v1.vercel.app/auth/callback" } // Optional: set redirect URL
+      options: { redirectTo } // Dynamically set redirect URL
     });
     if (error) setError(error.message);
     setLoading(false);
