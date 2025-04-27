@@ -132,3 +132,20 @@ export const signOutAction = async () => {
   await supabase.auth.signOut();
   return redirect("/sign-in");
 };
+
+
+
+export async function signInWithGoogleAction() {
+  "use server";
+  const supabase = await createClient();
+  const origin = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${origin}/auth/callback`,
+    },
+  });
+  if (error) throw error;
+  // Redirect user to the Supabase OAuth URL
+  return redirect(data.url);
+}
