@@ -5,29 +5,29 @@ import { createClient } from '@/utils/supabase/server'; // ✅ absolute import t
 
 
 
-export async function GET(request: Request) {
-  const supabase = await createClient(); 
-  const { searchParams } = new URL(request.url);
-  const action = searchParams.get('action');
-  const id = searchParams.get('id');
+// export async function GET(request: Request) {
+//   const supabase = await createClient(); 
+//   const { searchParams } = new URL(request.url);
+//   const action = searchParams.get('action');
+//   const id = searchParams.get('id');
 
-  try {
-    if (action === 'getEmployees') {
-      const employees = await getEmployees(supabase);
-      return NextResponse.json(employees);
-    }
+//   try {
+//     if (action === 'getEmployees') {
+//       const employees = await getEmployees(supabase);
+//       return NextResponse.json(employees);
+//     }
 
-    if (action === 'getEmployeeById' && id) {
-      const employee = await getEmployeeById(supabase,id);
-      return NextResponse.json(employee);
-    }
+//     if (action === 'getEmployeeById' && id) {
+//       const employee = await getEmployeeById(supabase,id);
+//       return NextResponse.json(employee);
+//     }
 
-    return NextResponse.json({ error: 'Invalid action or missing parameters' }, { status: 400 });
-  } catch (error) {
-    console.error('Error in GET /api/employee:', error);
-    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
-  }
-}
+//     return NextResponse.json({ error: 'Invalid action or missing parameters' }, { status: 400 });
+//   } catch (error) {
+//     console.error('Error in GET /api/employee:', error);
+//     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+//   }
+// }
 export async function POST(request: Request) {
   const supabase = await createClient(); 
   try {
