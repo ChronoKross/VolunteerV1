@@ -1,8 +1,8 @@
+import { Database } from "@/types/supabase";
 
 
 
-
-export async function volunteerEmployee(client:any, userId: string) {
+export async function volunteerEmployee(client:any, userId: string, sessionMinutes: number) {
   
 
   // Get the current max position
@@ -28,6 +28,21 @@ export async function volunteerEmployee(client:any, userId: string) {
   if (!updateData || updateData.length === 0) {
     throw new Error('Not authorized to volunteer (RLS policy blocked)');
   }
+
+   const { error: timelineErr } = await client
+    .from('timeline')
+    .insert([
+      {
+        id: crypto.randomUUID(),
+        employee_id: userId,
+        action_type: "volunteer", // must match your enum
+        created_at: new Date().toISOString(),
+        volunteer_minutes: sessionMinutes, // pass this in
+        shift_hours: sessionMinutes / 60,
+        notes: "Volunteered via queue",
+      } as Database["public"]["Tables"]["timeline"]["Insert"]
+    ]);
+  console.log("Timeline insert error:", timelineErr);  
   
 
   return { newPosition: maxPosition + 1 }

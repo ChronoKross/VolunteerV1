@@ -12,12 +12,45 @@ export default function EmployeeStack() {
   const employees = useQueue()
   const { theme } = useTheme()
 
+function calculateSessionMinutes(): number {
+  const now = new Date();
+
+  // Get today's 7pm
+  const shiftStart = new Date(now);
+  shiftStart.setHours(19, 0, 0, 0);
+
+  // Get tomorrow's 7am
+  const shiftEnd = new Date(shiftStart);
+  shiftEnd.setDate(shiftEnd.getDate() + 1);
+  shiftEnd.setHours(7, 0, 0, 0);
+
+  // If now is between 7pm and midnight
+  if (now >= shiftStart && now < shiftEnd) {
+    return Math.floor((shiftEnd.getTime() - now.getTime()) / 60000);
+  }
+
+  // If now is between midnight and 7am (same shift, but after midnight)
+  const prevShiftStart = new Date(shiftStart);
+  prevShiftStart.setDate(prevShiftStart.getDate() - 1); // yesterday 7pm
+  const prevShiftEnd = new Date(prevShiftStart);
+  prevShiftEnd.setDate(prevShiftEnd.getDate() + 1);
+  prevShiftEnd.setHours(7, 0, 0, 0);
+
+  const midnight = new Date(prevShiftEnd);
+  midnight.setHours(0, 0, 0, 0);
+  if (now >= midnight && now < prevShiftEnd) {
+    return Math.floor((prevShiftEnd.getTime() - now.getTime()) / 60000);
+  }
+
+  // Not in shift window
+  return 0;
+}
   const getColorSaturation = (hours: number) => {
     const percentage = Math.min(hours / 50, 1) * 100
     return percentage
   }
 
-  const volunteer = async (userId: string) => {
+  const volunteer = async (userId: string, sessionMinutes:number) => {
   try {
     const res = await fetch('/api/employee', {
       method: 'POST',
@@ -25,6 +58,7 @@ export default function EmployeeStack() {
       body: JSON.stringify({
         action: 'volunteer',
         userId,
+        sessionMinutes,
       }),
     });
 
@@ -71,7 +105,14 @@ export default function EmployeeStack() {
                 >
                   <Button
                     variant="outline"
-                    onClick={() => volunteer(employee.id)}
+                    onClick={() => {
+                      const sessionMinutes = calculateSessionMinutes()
+                      if (sessionMinutes <= 0) {
+                        alert("You cannot clock out before 7pm or after 7am!");
+                        return;
+                      }
+                      volunteer(employee.id, sessionMinutes);
+                    }}
                     className="w-full flex items-center justify-between p-4 h-auto text-left bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300"
                   >
                     <div className="flex items-center gap-3">

@@ -32,14 +32,14 @@ export async function POST(request: Request) {
   const supabase = await createClient(); 
   try {
     const body = await request.json();
-    const { action, userId } = body;
+    const { action, userId, sessionMinutes } = body;
 
-    if (action === 'volunteer') {
-      if (!userId) {
-        return NextResponse.json({ error: 'Missing userId' }, { status: 400 });
+        if (action === 'volunteer') {
+      if (!userId || typeof sessionMinutes !== "number") {
+        return NextResponse.json({ error: 'Missing userId or sessionMinutes' }, { status: 400 });
       }
 
-      const result = await volunteerEmployee(supabase, userId);
+      const result = await volunteerEmployee(supabase, userId, sessionMinutes);
 
       // Defensive: If result is falsy, treat as failure
       if (!result || typeof result.newPosition !== 'number') {
