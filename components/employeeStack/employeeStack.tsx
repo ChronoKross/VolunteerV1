@@ -142,7 +142,7 @@ function calculateSessionMinutes(): number {
                             : `hsla(210, ${saturation}%, 85%, 0.8)`,
                         color:
                           theme === "dark"
-                            ? `hsl(250, ${Math.max(saturation, 60)}%, ${Math.min(70, 50 + saturation / 2)}%)`
+                            ? "#C7AFFF" // Adjusted for dark mode
                             : `hsl(210, ${Math.max(saturation, 60)}%, ${Math.max(30, 50 - saturation / 2)}%)`,
                         borderColor:
                           theme === "dark"
@@ -154,7 +154,7 @@ function calculateSessionMinutes(): number {
                       }}
                     >
                       <Clock className="h-4 w-4" />
-                      <span className="text-sm font-medium">{employee.totalVolunteeredHours} hrs</span>
+                      <span className="text-sm font-medium">{Number(employee.totalVolunteeredHours ?? 0).toFixed(2)} hrs</span>
                     </div>
                   </Button>
                 </motion.div>
