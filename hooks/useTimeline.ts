@@ -85,8 +85,9 @@ export function useTimeline(pageSize = 5) {
     const data = await fetchTimelineEntries(nextIndex, nextIndex + pageSize - 1)
     setTimelineEntries((prev) => [...prev, ...mapTimelineEntries(data)])
     setHasMore(data.length === pageSize)
-    setLoading(false)
+      setLoading(false)
   }
+    //
 
   return { timelineEntries, loading, hasMore, loadMore }
 }
