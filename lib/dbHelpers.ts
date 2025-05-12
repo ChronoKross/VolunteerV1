@@ -43,6 +43,30 @@ export async function volunteerEmployee(client:any, userId: string, sessionMinut
       } as Database["public"]["Tables"]["timeline"]["Insert"]
     ]);
   console.log("Timeline insert error:", timelineErr);  
+   // --- NEW: Update totalVolunteeredHours ---
+  // 1. Fetch current total
+  const { data: employee, error: fetchError } = await client
+    .from('employees')
+    .select('totalVolunteeredHours')
+    .eq('id', userId)
+    .single();
+  if (fetchError) {
+    console.error('Error fetching employee for totalVolunteeredHours:', fetchError);
+    // Not fatal, but you may want to handle this
+  }
+
+  // 2. Update total
+  const newTotal = (employee?.totalVolunteeredHours ?? 0) + sessionMinutes / 60;
+  const { error: updateError } = await client
+    .from('employees')
+    .update({ totalVolunteeredHours: newTotal })
+    .eq('id', userId);
+  if (updateError) {
+    console.error('Error updating totalVolunteeredHours:', updateError);
+    // Not fatal, but you may want to handle this
+  }
+  // --- END NEW ---
+ 
   
 
   return { newPosition: maxPosition + 1 }

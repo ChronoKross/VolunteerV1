@@ -219,7 +219,8 @@ export function EmployeeTimeline() {
                         <div className="flex items-center">
                           <span className="text-xs px-3 py-1 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 flex items-center gap-1">
                             <Clock className="h-3 w-3" />
-                            <span>{Number(employee.hoursToday).toFixed(0)} hrs</span>
+                            <span>{formatDate(employee.leftAt)}</span>
+                            <span>{" | "+"Volunteered: "+Number(employee.shiftHours).toFixed(2)} hrs</span>
                           </span>
                         </div>
                       </div>

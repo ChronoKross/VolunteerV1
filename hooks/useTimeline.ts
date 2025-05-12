@@ -8,7 +8,7 @@ export function useTimeline(pageSize = 5) {
   const [hasMore, setHasMore] = useState(true)
   const supabase = createClient()
 
-  // Fetch employees from Supabase
+  // Fetch employees from Supabase, and join with timeline table
   const fetchTimelineEntries = async (from: number, to: number) => {
     setLoading(true)
     const { data, error } = await supabase
@@ -52,7 +52,8 @@ export function useTimeline(pageSize = 5) {
         profilePicture: emp.profile_pic || "/placeholder.svg?height=100&width=100",
         jobTitle: emp.job_title || "",
         hoursToday: (emp.totalVolunteeredHours ?? 0).toFixed(2),
-        totalHours: emp.totalVolunteeredHours ?? 0,
+          totalHours: emp.totalVolunteeredHours ?? 0,
+          leftAt: entry.created_at,
       }
     })
   }
