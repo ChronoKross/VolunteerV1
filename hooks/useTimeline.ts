@@ -25,23 +25,16 @@ export function useTimeline(pageSize = 5) {
   }
 
   // Map Supabase employee data to timeline format
-  function mapEmployees(data: Employee[]): any[] {
-    return (data || []).map((emp) => ({
-      id: emp.id,
-      name: emp.name,
-      initials: emp.name
-        ? emp.name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .substring(0, 2)
-            .toUpperCase()
-        : "EM",
-      profilePicture: emp.profile_pic || "/placeholder.svg?height=100&width=100",
-      leftTime: emp.created_at,
-      hoursToday: (emp.totalVolunteeredHours ?? 0).toFixed(2),
-      totalHours: emp.totalVolunteeredHours ?? 0,
-      jobTitle: emp.job_title,
+  function mapTimelineEntries(data: any[]): any[] {
+    return (data || []).map((entry) => ({
+      id: entry.id,
+      actionType: entry.action_type,
+      createdAt: entry.created_at,
+      employeeId: entry.employee_id,
+      notes: entry.notes,
+      shiftHours: entry.shift_hours,
+      volunteerMinutes: entry.volunteer_minutes,
+      // Add more fields as needed
     }))
   }
 
@@ -49,7 +42,7 @@ export function useTimeline(pageSize = 5) {
   useEffect(() => {
     const load = async () => {
       const data = await fetchTimelineEntries(0, pageSize - 1)
-      setTimelineEntries(mapEmployees(data))
+      setTimelineEntries(mapTimelineEntries(data))
       setHasMore(data.length === pageSize)
       setLoading(false)
     }
@@ -71,7 +64,7 @@ export function useTimeline(pageSize = 5) {
         () => {
           // Refetch first page on any change
           fetchTimelineEntries(0, pageSize - 1).then((data) => {
-            setTimelineEntries(mapEmployees(data))
+            setTimelineEntries(mapTimelineEntries(data))
             setHasMore(data.length === pageSize)
           })
         }
@@ -90,7 +83,7 @@ export function useTimeline(pageSize = 5) {
     setLoading(true)
     const nextIndex = timelineEntries.length
     const data = await fetchTimelineEntries(nextIndex, nextIndex + pageSize - 1)
-    setTimelineEntries((prev) => [...prev, ...mapEmployees(data)])
+    setTimelineEntries((prev) => [...prev, ...mapTimelineEntries(data)])
     setHasMore(data.length === pageSize)
     setLoading(false)
   }
