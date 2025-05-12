@@ -13,12 +13,21 @@ export function useTimeline(pageSize = 5) {
     setLoading(true)
     const { data, error } = await supabase
       .from('timeline')
-      .select('*')
+      .select(`
+        *,
+        employees (
+          id,
+          name,
+          profile_pic,
+          job_title,
+          totalVolunteeredHours
+        )
+      `)
       .order('created_at', { ascending: false })
       .range(from, to)
     setLoading(false)
     if (error) {
-      console.error("Error fetching employees:", error)
+      console.error("Error fetching timeline entries:", error)
       return []
     }
     return data || []
@@ -26,16 +35,26 @@ export function useTimeline(pageSize = 5) {
 
   // Map Supabase employee data to timeline format
   function mapTimelineEntries(data: any[]): any[] {
-    return (data || []).map((entry) => ({
-      id: entry.id,
-      actionType: entry.action_type,
-      createdAt: entry.created_at,
-      employeeId: entry.employee_id,
-      notes: entry.notes,
-      shiftHours: entry.shift_hours,
-      volunteerMinutes: entry.volunteer_minutes,
-      // Add more fields as needed
-    }))
+    return (data || []).map((entry) => {
+      const emp = entry.employees || {}
+      return {
+        id: entry.id,
+        actionType: entry.action_type,
+        createdAt: entry.created_at,
+        employeeId: entry.employee_id,
+        notes: entry.notes,
+        shiftHours: entry.shift_hours,
+        volunteerMinutes: entry.volunteer_minutes,
+        name: emp.name || "",
+        initials: emp.name
+          ? emp.name.split(" ").map((n: string) => n[0]).join("").substring(0, 2).toUpperCase()
+          : "EM",
+        profilePicture: emp.profile_pic || "/placeholder.svg?height=100&width=100",
+        jobTitle: emp.job_title || "",
+        hoursToday: (emp.totalVolunteeredHours ?? 0).toFixed(2),
+        totalHours: emp.totalVolunteeredHours ?? 0,
+      }
+    })
   }
 
   // Initial load
