@@ -87,7 +87,7 @@ function calculateSessionMinutes(): number {
     <div className="dark:from-slate-900 dark:via-blue-950 dark:to-violet-950">
       <div className="w-full max-w-md mx-auto space-y-6">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Employee Volunteer Stack</h1>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white"></h1>
           <ThemeSwitcher />
         </div>
 
