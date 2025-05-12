@@ -7,9 +7,13 @@ import { Button } from '@/components/ui/button'
 import { Clock } from 'lucide-react'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useState, useEffect } from 'react'
+
+
 
 export default function EmployeeStack() {
   const employees = useQueue()
+  const [mounted, setMounted] = useState(false)
   const { theme } = useTheme()
 
 function calculateSessionMinutes(): number {
@@ -71,7 +75,11 @@ function calculateSessionMinutes(): number {
     console.error('❌ Volunteer failed:', err);
     // You could throw in a toast or visual indicator here
   }
-};
+  };
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
  
 
 

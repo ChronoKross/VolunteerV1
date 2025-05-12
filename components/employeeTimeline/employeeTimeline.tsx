@@ -1,5 +1,5 @@
 "use client"
-
+import { useTimeline } from "@/hooks/useTimeline"
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
@@ -44,55 +44,20 @@ const formatDate = (isoDate: string) => {
 
 export function EmployeeTimeline() {
   const { theme, setTheme } = useTheme()
-  const [employees, setEmployees] = useState<any[]>([])
   const [mounted, setMounted] = useState(false)
-  const [loading, setLoading] = useState(true)
-  const [hasMore, setHasMore] = useState(true)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadingRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
-  const supabase = createClient()
-  const PAGE_SIZE = 5
+
+  const { employees, loading, hasMore, loadMore } = useTimeline(5)
+  
 
   // Fetch employees from Supabase
-  const fetchEmployees = async (from: number, to: number) => {
-    setLoading(true)
-    const { data, error } = await supabase
-      .from('employees')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .range(from, to)
-    setLoading(false)
-    if (error) {
-      console.error("Error fetching employees:", error)
-      return []
-    }
-    return data || []
-  }
+ 
 
   // Initial load
-  useEffect(() => {
-    setMounted(true)
-    const load = async () => {
-      const data = await fetchEmployees(0, PAGE_SIZE - 1)
-      setEmployees(mapEmployees(data))
-      setHasMore(data.length === PAGE_SIZE)
-      setLoading(false)
-    }
-    load()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  useEffect(() => { setMounted(true) }, [])
 
-  // Load more employees when scrolling to the bottom
-  const loadMoreEmployees = async () => {
-    if (loading || !hasMore) return
-    setLoading(true)
-    const nextIndex = employees.length
-    const data = await fetchEmployees(nextIndex, nextIndex + PAGE_SIZE - 1)
-    setEmployees((prev) => [...prev, ...mapEmployees(data)])
-    setHasMore(data.length === PAGE_SIZE)
-    setLoading(false)
-  }
 
   // Set up intersection observer for infinite scroll
   useEffect(() => {
@@ -105,7 +70,7 @@ export function EmployeeTimeline() {
     observerRef.current = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore) {
-          loadMoreEmployees()
+          loadMore()
         }
       },
       { threshold: 0.1 },
@@ -124,25 +89,25 @@ export function EmployeeTimeline() {
   }, [loading, hasMore])
 
   // Map Supabase employee data to timeline format
-  function mapEmployees(data: Employee[]): any[] {
-    return (data || []).map((emp) => ({
-      id: emp.id,
-      name: emp.name,
-      initials: emp.name
-        ? emp.name
-            .split(" ")
-            .map((n) => n[0])
-            .join("")
-            .substring(0, 2)
-            .toUpperCase()
-        : "EM",
-      profilePicture: emp.profile_pic || "/placeholder.svg?height=100&width=100",
-      leftTime: emp.created_at,
-      hoursToday: (emp.totalVolunteeredHours ?? 0).toFixed(2),
-      totalHours: emp.totalVolunteeredHours ?? 0,
-      jobTitle: emp.job_title,
-    }))
-  }
+  // function mapEmployees(data: Employee[]): any[] {
+  //   return (data || []).map((emp) => ({
+  //     id: emp.id,
+  //     name: emp.name,
+  //     initials: emp.name
+  //       ? emp.name
+  //           .split(" ")
+  //           .map((n) => n[0])
+  //           .join("")
+  //           .substring(0, 2)
+  //           .toUpperCase()
+  //       : "EM",
+  //     profilePicture: emp.profile_pic || "/placeholder.svg?height=100&width=100",
+  //     leftTime: emp.created_at,
+  //     hoursToday: (emp.totalVolunteeredHours ?? 0).toFixed(2),
+  //     totalHours: emp.totalVolunteeredHours ?? 0,
+  //     jobTitle: emp.job_title,
+  //   }))
+  // }
 
   const container = {
     hidden: { opacity: 0 },
