@@ -83,7 +83,7 @@ export type Database = {
           {
             foreignKeyName: "timeline_employee_id_fkey"
             columns: ["employee_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "employees"
             referencedColumns: ["id"]
           },

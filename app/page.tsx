@@ -11,7 +11,7 @@ export default async function Home() {
       {/* <Hero /> */}
       <main className="flex flex-col gap-20 max-w-5xl p-5">
         <EmployeeStack />
-        {/* <EmployeeTimeline /> */}
+        <EmployeeTimeline />
       </main>
     </>
   );

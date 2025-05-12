@@ -6,55 +6,9 @@ import { Card } from "@/components/ui/card"
 import { Clock, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Button } from "@/components/ui/button"
+import { createClient } from "@/utils/supabase/client"
+import { Employee } from "@/types/employee"
 
-// Mock data - you'll replace this with your actual data
-const allEmployees = Array(24)
-  .fill(null)
-  .map((_, index) => ({
-    id: index + 1,
-    name: [
-      "Alex Johnson",
-      "Jamie Smith",
-      "Taylor Wilson",
-      "Morgan Lee",
-      "Casey Brown",
-      "Jordan Rivera",
-      "Riley Cooper",
-      "Avery Martinez",
-    ][index % 8],
-    initials: ["AJ", "JS", "TW", "ML", "CB", "JR", "RC", "AM"][index % 8],
-    profilePicture: "/placeholder.svg?height=100&width=100",
-    // Use a fixed base date and add index for determinism
-    leftTime: new Date(2024, 0, 1, 16 + (index % 4), 15 + (index % 45), 0).toISOString(),
-    // Use a deterministic value instead of Math.random()
-    hoursToday: (6 + (index % 4) + (index % 100) / 100).toFixed(2),
-    totalHours: 75 + index * 3.5,
-    jobTitle: [
-      "Senior Developer",
-      "UX Designer",
-      "Project Manager",
-      "Marketing Specialist",
-      "Customer Support",
-      "Data Analyst",
-      "HR Specialist",
-      "Product Manager",
-    ][index % 8],
-  }))
-
-// Format the ISO date to a more readable format
-const formatDate = (isoDate: string) => {
-  const date = new Date(isoDate)
-  return date.toLocaleString("en-US", {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-    hour12: true,
-  })
-}
-
-// Skeleton loader component
 const SkeletonLoader = () => {
   return (
     <div className="mb-6 relative animate-pulse">
@@ -76,44 +30,68 @@ const SkeletonLoader = () => {
   )
 }
 
+const formatDate = (isoDate: string) => {
+  const date = new Date(isoDate)
+  return date.toLocaleString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true,
+  })
+}
+
 export function EmployeeTimeline() {
   const { theme, setTheme } = useTheme()
-    const [employees, setEmployees] = useState<typeof allEmployees>([])
-    const [mounted, setMounted] = useState(false)
+  const [employees, setEmployees] = useState<any[]>([])
+  const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadingRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
+  const supabase = createClient()
+  const PAGE_SIZE = 5
+
+  // Fetch employees from Supabase
+  const fetchEmployees = async (from: number, to: number) => {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, to)
+    setLoading(false)
+    if (error) {
+      console.error("Error fetching employees:", error)
+      return []
+    }
+    return data || []
+  }
 
   // Initial load
-    useEffect(() => {
+  useEffect(() => {
     setMounted(true)
-    setTimeout(() => {
-      setEmployees(allEmployees.slice(0, 5))
+    const load = async () => {
+      const data = await fetchEmployees(0, PAGE_SIZE - 1)
+      setEmployees(mapEmployees(data))
+      setHasMore(data.length === PAGE_SIZE)
       setLoading(false)
-    }, 1000)
+    }
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Load more employees when scrolling to the bottom
-  const loadMoreEmployees = () => {
+  const loadMoreEmployees = async () => {
     if (loading || !hasMore) return
-
     setLoading(true)
-
-    // Simulate API call with timeout
-    setTimeout(() => {
-      const nextIndex = employees.length
-      const nextEmployees = allEmployees.slice(nextIndex, nextIndex + 5)
-
-      if (nextEmployees.length === 0) {
-        setHasMore(false)
-      } else {
-        setEmployees((prev) => [...prev, ...nextEmployees])
-      }
-
-      setLoading(false)
-    }, 1000)
+    const nextIndex = employees.length
+    const data = await fetchEmployees(nextIndex, nextIndex + PAGE_SIZE - 1)
+    setEmployees((prev) => [...prev, ...mapEmployees(data)])
+    setHasMore(data.length === PAGE_SIZE)
+    setLoading(false)
   }
 
   // Set up intersection observer for infinite scroll
@@ -142,7 +120,29 @@ export function EmployeeTimeline() {
         observerRef.current.disconnect()
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, hasMore])
+
+  // Map Supabase employee data to timeline format
+  function mapEmployees(data: Employee[]): any[] {
+    return (data || []).map((emp) => ({
+      id: emp.id,
+      name: emp.name,
+      initials: emp.name
+        ? emp.name
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase()
+        : "EM",
+      profilePicture: emp.profile_pic || "/placeholder.svg?height=100&width=100",
+      leftTime: emp.created_at,
+      hoursToday: (emp.totalVolunteeredHours ?? 0).toFixed(2),
+      totalHours: emp.totalVolunteeredHours ?? 0,
+      jobTitle: emp.job_title,
+    }))
+  }
 
   const container = {
     hidden: { opacity: 0 },
@@ -178,7 +178,7 @@ export function EmployeeTimeline() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center sticky top-0 z-10 bg-background py-2 mb-2">
-        <h2 className="text-xl font-semibold">Employee Volunteer Stack</h2>
+        <h2 className="text-xl font-semibold">Volunteer Timeline</h2>
         <Button
           variant="outline"
           size="icon"
