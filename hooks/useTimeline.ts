@@ -66,7 +66,7 @@ export function useTimeline(pageSize = 5) {
         {
           event: '*',
           schema: 'public',
-          table: 'employees',
+          table: 'timeline',
         },
         () => {
           // Refetch first page on any change
