@@ -3,16 +3,16 @@ import { createClient } from "@/utils/supabase/client"
 import { Employee } from "@/types/employee"
 
 export function useTimeline(pageSize = 5) {
-  const [employees, setEmployees] = useState<any[]>([])
+  const [timelineEntries, setTimelineEntries] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [hasMore, setHasMore] = useState(true)
   const supabase = createClient()
 
   // Fetch employees from Supabase
-  const fetchEmployees = async (from: number, to: number) => {
+  const fetchTimelineEntries = async (from: number, to: number) => {
     setLoading(true)
     const { data, error } = await supabase
-      .from('employees')
+      .from('timeline')
       .select('*')
       .order('created_at', { ascending: false })
       .range(from, to)
@@ -48,8 +48,8 @@ export function useTimeline(pageSize = 5) {
   // Initial load
   useEffect(() => {
     const load = async () => {
-      const data = await fetchEmployees(0, pageSize - 1)
-      setEmployees(mapEmployees(data))
+      const data = await fetchTimelineEntries(0, pageSize - 1)
+      setTimelineEntries(mapEmployees(data))
       setHasMore(data.length === pageSize)
       setLoading(false)
     }
@@ -70,8 +70,8 @@ export function useTimeline(pageSize = 5) {
         },
         () => {
           // Refetch first page on any change
-          fetchEmployees(0, pageSize - 1).then((data) => {
-            setEmployees(mapEmployees(data))
+          fetchTimelineEntries(0, pageSize - 1).then((data) => {
+            setTimelineEntries(mapEmployees(data))
             setHasMore(data.length === pageSize)
           })
         }
@@ -88,12 +88,12 @@ export function useTimeline(pageSize = 5) {
   const loadMore = async () => {
     if (loading || !hasMore) return
     setLoading(true)
-    const nextIndex = employees.length
-    const data = await fetchEmployees(nextIndex, nextIndex + pageSize - 1)
-    setEmployees((prev) => [...prev, ...mapEmployees(data)])
+    const nextIndex = timelineEntries.length
+    const data = await fetchTimelineEntries(nextIndex, nextIndex + pageSize - 1)
+    setTimelineEntries((prev) => [...prev, ...mapEmployees(data)])
     setHasMore(data.length === pageSize)
     setLoading(false)
   }
 
-  return { employees, loading, hasMore, loadMore }
+  return { timelineEntries, loading, hasMore, loadMore }
 }

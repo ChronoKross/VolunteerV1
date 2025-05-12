@@ -49,7 +49,7 @@ export function EmployeeTimeline() {
   const loadingRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
 
-  const { employees, loading, hasMore, loadMore } = useTimeline(5)
+  const { timelineEntries, loading, hasMore, loadMore } = useTimeline(5)
   
 
   // Fetch employees from Supabase
@@ -176,7 +176,7 @@ export function EmployeeTimeline() {
           />
 
           {/* Skeleton loaders when initially loading */}
-          {loading && employees.length === 0 && (
+          {loading && timelineEntries.length === 0 && (
             <div className="space-y-6">
               {[...Array(3)].map((_, index) => (
                 <SkeletonLoader key={`skeleton-${index}`} />
@@ -186,7 +186,7 @@ export function EmployeeTimeline() {
 
           {/* Actual timeline entries */}
           <AnimatePresence>
-            {employees.map((employee) => (
+            {timelineEntries.map((employee) => (
               <motion.div
                 key={employee.id}
                 variants={item}
@@ -235,7 +235,7 @@ export function EmployeeTimeline() {
           {/* Loading indicator */}
           {hasMore && (
             <div ref={loadingRef} className="flex justify-center items-center py-4 mb-4 h-20">
-              {loading && employees.length > 0 ? (
+              {loading && timelineEntries.length > 0 ? (
                 <motion.div
                   className="flex flex-col items-center"
                   initial={{ opacity: 0 }}
@@ -251,7 +251,7 @@ export function EmployeeTimeline() {
             </div>
           )}
 
-          {!hasMore && employees.length > 0 && (
+          {!hasMore && timelineEntries.length > 0 && (
             <motion.div
               className="text-center py-4 text-sm text-gray-500 dark:text-gray-400"
               initial={{ opacity: 0, y: 10 }}
