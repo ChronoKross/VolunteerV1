@@ -188,7 +188,7 @@ export function EmployeeTimeline() {
           <AnimatePresence>
             {timelineEntries.map((employee) => (
               <motion.div
-                key={employee.id}
+                key={`${employee.id}-${employee.createdAt}`}
                 variants={item}
                 className="mb-6 relative"
                 initial={{ opacity: 0, y: 20 }}
