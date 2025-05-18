@@ -15,6 +15,8 @@ export default function EmployeeStack() {
   const employees = useQueue()
   const [mounted, setMounted] = useState(false)
   const { theme } = useTheme()
+  const [error, setError] = useState<string | null>(null)
+  const [errorEmployee, setErrorEmployee] = useState<string | null>(null)
 
 function calculateSessionMinutes(): number {
   const now = new Date();
@@ -54,27 +56,39 @@ function calculateSessionMinutes(): number {
     return percentage
   }
 
-  const volunteer = async (userId: string, sessionMinutes:number) => {
-  try {
-    const res = await fetch('/api/employee', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'volunteer',
-        userId,
-        sessionMinutes,
-      }),
-    });
+  const volunteer = async (userId: string, sessionMinutes:number, employeeName: string) => {
+    try {
+      const res = await fetch('/api/employee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'volunteer',
+          userId,
+          sessionMinutes,
+        }),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (!res.ok) throw new Error(data.error || 'Unknown error');
+      if (!res.ok) {
+        // If backend returns "Already volunteered today" error, show friendly message
+        if (data.error && data.error.toLowerCase().includes('already volunteered')) {
+          setError(`${employeeName} has already volunteered today.`);
+          setErrorEmployee(employeeName);
+        } else {
+          setError(data.error || 'Unknown error');
+          setErrorEmployee(employeeName);
+        }
+        throw new Error(data.error || 'Unknown error');
+      }
 
-    console.log('✅ Volunteer success:', data);
-  } catch (err) {
-    console.error('❌ Volunteer failed:', err);
-    // You could throw in a toast or visual indicator here
-  }
+      setError(null);
+      setErrorEmployee(null);
+      console.log('✅ Volunteer success:', data);
+    } catch (err) {
+      console.error('❌ Volunteer failed:', err);
+      // Error state already set above
+    }
   };
   
   useEffect(() => {
@@ -90,6 +104,19 @@ function calculateSessionMinutes(): number {
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white"></h1>
           <ThemeSwitcher />
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="mb-4 p-3 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-300 dark:border-red-700">
+            {error}
+            <button
+              className="ml-2 text-xs underline"
+              onClick={() => { setError(null); setErrorEmployee(null); }}
+            >
+              Dismiss
+            </button>
+          </div>
+        )}
 
         <div className="space-y-3">
           <AnimatePresence>
@@ -119,7 +146,7 @@ function calculateSessionMinutes(): number {
                         alert("You cannot clock out before 7pm or after 7am!");
                         return;
                       }
-                      volunteer(employee.id, sessionMinutes);
+                      volunteer(employee.id, sessionMinutes, employee.name);
                     }}
                     className="w-full flex items-center justify-between p-4 h-auto text-left bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border border-slate-200 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-800 transition-all duration-300"
                   >

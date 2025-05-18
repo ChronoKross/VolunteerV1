@@ -14,6 +14,7 @@ export type Database = {
           auth_id: string | null
           created_at: string
           email: string | null
+          hasVolunteered: boolean
           id: string
           job_title: string
           name: string
@@ -27,6 +28,7 @@ export type Database = {
           auth_id?: string | null
           created_at?: string
           email?: string | null
+          hasVolunteered?: boolean
           id?: string
           job_title: string
           name: string
@@ -40,6 +42,7 @@ export type Database = {
           auth_id?: string | null
           created_at?: string
           email?: string | null
+          hasVolunteered?: boolean
           id?: string
           job_title?: string
           name?: string

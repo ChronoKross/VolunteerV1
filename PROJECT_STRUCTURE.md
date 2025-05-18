@@ -1,84 +1,266 @@
-# VolunteerV1 Project Documentation
+# VolunteerV1 – In-Depth Technical Documentation
 
-## 1. Project Entry and Layout
+## Overview
+
+**VolunteerV1** is a Next.js + Supabase application for managing employee volunteer shifts.  
+Features include:
+
+- Real-time queue management
+- Volunteer timeline
+- Authentication (Google OAuth & email)
+- Ensures employees can only volunteer once per day
+- Data integrity via Supabase triggers, Edge Functions, and frontend logic
+
+---
+
+## Project Structure
+
+<details>
+<summary><strong>Key Files & Folders</strong></summary>
+
 - `app/layout.tsx`: Main layout, theme provider, Google OAuth, navigation, and footer.
-- `app/globals.css`: Global styles.
+- `components/employeeStack/employeeStack.tsx`: UI for the employee queue/stack.
+- `components/employeeTimeline/employeeTimeline.tsx`: UI for the volunteer timeline.
+- `lib/dbHelpers.ts`: Core backend logic for employee actions, timeline inserts, and helpers.
+- `hooks/useQueue.ts`, `hooks/useTimeline.ts`: Data fetching and real-time subscriptions.
+- `components/theme-switcher.tsx`: Theme toggle logic.
+- `utils/supabase/`: Supabase client/server setup.
+- `types/employee.ts`, `types/supabase.ts`: TypeScript types for strong typing.
+- **Supabase Edge Function**: Custom serverless function for scheduled tasks (cron).
+- **Supabase Database**: Tables for employees, timeline, and triggers/functions.
 
-## 2. Authentication and User Management
-- `app/(auth-pages)/sign-in/page.tsx`, `sign-up/page.tsx`, `forgot-password/page.tsx`, `reset-password/page.tsx`: Auth pages.
-- `app/api/auth/callback/route.ts`: Auth callback route.
-- `components/header-auth.tsx`: Auth header UI.
-- `components/googleSignInButton/googleSignInButton.tsx.tsx`: Google sign-in button.
-
-## 3. Supabase Integration
-- `utils/supabase/client.ts`: Supabase client setup.
-- `utils/supabase/server.ts`: Server-side Supabase utilities.
-- `utils/supabase/check-env-vars.ts`: Checks for required Supabase environment variables.
-- `lib/dbHelpers.ts`: All database helper functions, including employee and timeline logic.
-
-## 4. Employee and Timeline Features
-- `components/employeeStack/employeeStack.tsx`: Employee stack UI, shows employees and their total volunteered hours.
-- `components/employeeTimeline/employeeTimeline.tsx`: Timeline UI, shows volunteer events, hours, and employee info.
-- `hooks/useQueue.ts`: Logic for managing the employee queue/stack.
-- `hooks/useTimeline.ts`: Logic for fetching and subscribing to timeline entries.
-
-## 5. Types and Data Models
-- `types/employee.ts`: Employee type definition.
-- `types/supabase.ts`: Supabase-generated types for tables (including timeline and employees).
-
-## 6. API Endpoints
-- `app/api/employee/route.ts`: Handles employee actions (e.g., volunteering), calls dbHelpers.
-
-## 7. Utilities and Helpers
-- `lib/utils.ts`: General utility functions (e.g., class name merging).
-- `components/ui/`: Reusable UI components (Avatar, Card, Button, etc.).
-
-## 8. Theming and Branding
-- `components/theme-switcher.tsx`: Theme switcher component.
-- `tailwind.config.ts`: Tailwind CSS configuration.
-- `postcss.config.js`: PostCSS configuration.
-
-## 9. Documentation and Metadata
-- `README.md`: Project overview and setup instructions.
-- `package.json`: Project dependencies and scripts.
-- `next.config.ts`, `tsconfig.json`: Next.js and TypeScript configuration.
+</details>
 
 ---
 
-## Summary of Data Flow
-1. User signs in (Google OAuth or email).
-2. Employees and timeline data are fetched from Supabase using hooks (`useQueue`, `useTimeline`).
-3. Volunteering actions are sent to `/api/employee/route.ts`, which uses `lib/dbHelpers.ts` to update the database (including timeline and total hours).
-4. UI components (`employeeStack`, `employeeTimeline`) display live data, subscribing to changes via Supabase Realtime.
-5. Theming and layout are managed globally in `app/layout.tsx` and `ThemeProvider`.
+## Data Model
+
+### `employees` Table
+
+| Field                  | Type      | Description                                 |
+|------------------------|-----------|---------------------------------------------|
+| `id`                   | UUID      | Primary key                                 |
+| `name`                 | Text      | Employee name                               |
+| `profile_pic`          | Text      | Profile picture URL                         |
+| `job_title`            | Text      | Employee job title                          |
+| `position`             | Integer   | Queue position                              |
+| `hasVolunteered`       | Boolean   | Can volunteer today? (reset nightly)        |
+| `totalVolunteeredHours`| Integer   | (Optional) Sum of all volunteer hours       |
+| ...other fields...     |           |                                             |
+
+### `timeline` Table
+
+| Field             | Type      | Description                                 |
+|-------------------|-----------|---------------------------------------------|
+| `id`              | UUID      | Primary key                                 |
+| `employee_id`     | UUID      | Foreign key to employees                    |
+| `action_type`     | Enum      | e.g., `"volunteer"`                         |
+| `created_at`      | Timestamp | When the action occurred                    |
+| `volunteer_minutes`| Integer  | Duration of the shift (minutes)             |
+| `shift_hours`     | Integer   | Duration of the shift (hours)               |
+| `notes`           | Text      | Free text                                   |
 
 ---
 
-## Suggestions & To-Dos for Cleanup and Structure
+## Core Flow: Volunteering
 
-- **Consolidate Utility Functions:**
-  - Move all utility functions (e.g., initials, date formatting) to a single `lib/utils.ts` for reusability.
-- **Consistent Naming:**
-  - Standardize file and variable naming (e.g., `googleSignInButton.tsx.tsx` → `GoogleSignInButton.tsx`).
-- **Type Safety:**
-  - Ensure all hooks and helpers use TypeScript types from `types/employee.ts` and `types/supabase.ts`.
-- **API Structure:**
-  - Consider splitting API endpoints by resource (e.g., `/api/employees`, `/api/timeline`) for clarity.
-- **Component Organization:**
-  - Group related components (e.g., stack, timeline, UI) into feature folders.
-- **Error Handling:**
-  - Add user-friendly error messages and loading states throughout the UI.
-- **Testing:**
-  - Add unit and integration tests for hooks, helpers, and API routes.
-- **Documentation:**
-  - Expand this doc with setup instructions, environment variables, and deployment notes.
-- **Accessibility:**
-  - Review UI for accessibility (color contrast, keyboard navigation, ARIA labels).
-- **Performance:**
-  - Optimize data fetching and consider pagination or virtualization for large lists.
-- **Security:**
-  - Review Supabase RLS policies and API endpoint protections.
+### 1. Volunteering Action
+
+**User clicks "Volunteer" in the EmployeeStack UI.**
+
+**Frontend:**
+```typescript
+// ...existing code...
+const res = await fetch('/api/employee/route', {
+  method: 'POST',
+  body: JSON.stringify({ userId, sessionMinutes }),
+});
+// ...existing code...
+```
+
+**Backend (`lib/dbHelpers.ts`):**
+```typescript
+// ...existing code...
+export async function volunteerEmployee(userId: string, sessionMinutes: number) {
+  // 1. Check if already volunteered today
+  const employee = await getEmployee(userId);
+  if (employee.hasVolunteered) throw new Error("Already volunteered today");
+
+  // 2. Move to back of queue
+  await moveToBackOfQueue(userId);
+
+  // 3. Set hasVolunteered = true
+  await setHasVolunteered(userId, true);
+
+  // 4. Insert timeline entry
+  await insertTimelineEntry(userId, sessionMinutes);
+
+  // 5. (Optional) Update totalVolunteeredHours
+  // ...existing code...
+}
+// ...existing code...
+```
+
+### 2. Preventing Double Volunteering
+
+- The `hasVolunteered` flag is checked before allowing a volunteer action.
+- If `hasVolunteered` is `true`, the backend blocks the action and returns an error.
 
 ---
 
-_Keep this file updated as your project evolves!_
+## Nightly Reset: Supabase Edge Function & Cron
+
+**How it works:**
+
+- **Edge Function:** Runs nightly at 12am via Supabase cron.
+- **Logic:** Resets `hasVolunteered` for all employees.
+
+**Example SQL:**
+```sql
+update employees set hasVolunteered = false;
+```
+
+**Side Effect:**  
+All employees become eligible to volunteer again at the start of each day.
+
+---
+
+## Data Consistency & Side Effects
+
+- **Single Source of Truth:**  
+  - `hasVolunteered` flag for daily check
+  - `timeline` table for historical record
+
+- **Edge Function Reset:**  
+  - Guarantees daily limit is enforced and resets reliably
+
+- **(Optional) `totalVolunteeredHours`:**  
+  - Use a DB trigger to keep in sync with timeline, or always calculate from timeline for accuracy
+
+**Potential Side Effects:**
+
+- Manual timeline edits require updating `totalVolunteeredHours` (if used)
+- Missed cron/Edge Function may block volunteering the next day
+- Race conditions are prevented by backend checks and RLS
+
+---
+
+## Real-Time Updates
+
+- **Supabase Realtime:**  
+  Hooks (`useQueue`, `useTimeline`) subscribe to changes in `employees` and `timeline` tables.
+
+**Example (React Hook):**
+```typescript
+// hooks/useQueue.ts
+import { useEffect } from 'react';
+import { supabase } from '../utils/supabase/client';
+
+export function useQueue() {
+  useEffect(() => {
+    const subscription = supabase
+      .channel('public:employees')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, payload => {
+        // Update UI
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(subscription); };
+  }, []);
+}
+```
+
+---
+
+## Theming & UI
+
+- **ThemeSwitcher:**  
+  Uses `next-themes` and is a client component.
+
+**Example:**
+```tsx
+// components/theme-switcher.tsx
+"use client";
+import { useTheme } from "next-themes";
+
+export function ThemeSwitcher() {
+  const { theme, setTheme } = useTheme();
+  // ...existing code...
+}
+```
+
+- **UI Components:**  
+  Built with Tailwind CSS and Framer Motion for smooth animations.
+
+---
+
+## Error Handling & User Feedback
+
+- **Backend:**  
+  Throws clear errors if an employee tries to volunteer twice in a day.
+
+- **Frontend:**  
+  Displays user-friendly error messages and loading states.
+
+**Example:**
+```tsx
+// ...existing code...
+try {
+  await volunteerEmployee(userId, sessionMinutes);
+} catch (e) {
+  setError(e.message);
+}
+// ...existing code...
+```
+
+---
+
+## Suggestions for Further Improvement
+
+- Add DB triggers to keep `totalVolunteeredHours` in sync if you keep that field.
+- Add admin UI for correcting mistakes (e.g., undoing a volunteer action).
+- Monitor Edge Function health to ensure nightly resets always run.
+- Expand tests for API routes, hooks, and helpers.
+- Improve accessibility and add ARIA labels where needed.
+- Paginate or virtualize large lists for performance.
+
+---
+
+## Diagram: Daily Volunteer Flow
+
+```mermaid
+flowchart TD
+  A[Start of Day] --> B[All employees: hasVolunteered = false]
+  B --> C[Employee volunteers]
+  C --> D[Backend checks hasVolunteered]
+  D -- Yes --> E[Block action, show error]
+  D -- No --> F[Set hasVolunteered = true, update queue, insert timeline]
+  F --> G[Employee cannot volunteer again today]
+  G --> H[Edge Function runs at midnight]
+  H --> B
+```
+
+---
+
+## Summary Table
+
+| Component/Process         | Role                                         | Side Effects/Notes                       |
+|--------------------------|----------------------------------------------|------------------------------------------|
+| EmployeeStack            | Shows queue, triggers volunteer action       | UI updates in real-time                  |
+| EmployeeTimeline         | Shows volunteer history                      | UI updates in real-time                  |
+| volunteerEmployee        | Handles backend logic for volunteering       | Throws if already volunteered            |
+| hasVolunteered           | Prevents double volunteering per day         | Reset by Edge Function nightly           |
+| Edge Function + Cron     | Resets all employees' hasVolunteered at 12am| All can volunteer again                  |
+| totalVolunteeredHours    | (Optional) Fast reads, must be kept in sync  | Use trigger or always calculate on demand|
+
+---
+
+## Final Notes
+
+- The architecture is robust: daily reset, backend checks, and real-time updates ensure fairness and data integrity.
+- The only critical dependency is the nightly Edge Function—monitor it for reliability.
+- For ultimate data integrity, prefer calculating totals from the timeline or use a DB trigger if you keep a summary field.
+
+---
+
+_Keep this documentation updated as your project evolves!_

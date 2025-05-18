@@ -2,27 +2,47 @@ import { Database } from "@/types/supabase";
 
 
 
-export async function volunteerEmployee(client:any, userId: string, sessionMinutes: number) {
+export async function volunteerEmployee(client: any, userId: string, sessionMinutes: number) {
+  
+   // Check if the employee has already volunteered
+  const { data: employeeData, error: checkError } = await client
+    .from('employees')
+    .select('hasVolunteered')
+    .eq('id', userId)
+    .single();
+
+  if (checkError) throw new Error('Failed to check volunteer status');
+  if (employeeData?.hasVolunteered) {
+    throw new Error('Employee has already volunteered this shift');
+  }
   
 
   // Get the current max position
   const { data: maxData, error: maxErr } = await client
     .from('employees')
-    .select('position')
+    .select('id, position')
     .order('position', { ascending: false })
     .limit(1)
     .single()
 
   if (maxErr) throw new Error('Failed to fetch max position')
+  
+  if (maxData) {
+    console.log(maxData.id)
+  } 
+ 
 
   const maxPosition = maxData?.position ?? 0
 
   // Move user to the back of the queue
   const { data: updateData, error: updateErr } = await client
-    .from('employees')
-    .update({ position: maxPosition + 1 })
-    .eq('id', userId)
-    .select()
+  .from('employees')
+  .update({ 
+    position: maxPosition + 1, 
+    hasVolunteered: true  // New line to flip the flag
+  })
+  .eq('id', userId)
+  .select();
 
   if (updateErr) throw new Error('Failed to update employee position')
   if (!updateData || updateData.length === 0) {
