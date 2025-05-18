@@ -1,3 +1,43 @@
+# 🚩 Things To Fix & Safety Concerns
+
+- **File Naming Consistency:**  
+  - Rename files like `googleSignInButton.tsx.tsx` to `GoogleSignInButton.tsx`.
+  - Use PascalCase for React components and camelCase for hooks/utilities.
+
+- **Error Handling:**  
+  - Add user-friendly error messages and visual feedback (toasts/modals) for all user actions, especially failed volunteer attempts.
+  - Ensure all API endpoints return consistent error structures.
+
+- **Type Safety:**  
+  - Ensure all hooks, helpers, and API routes use strict TypeScript types from `types/employee.ts` and `types/supabase.ts`.
+  - Avoid using `any` or implicit `any` types.
+
+- **Environment Variables:**  
+  - Validate all required environment variables at startup and fail gracefully if missing.
+  - Never expose sensitive keys (e.g., Supabase service role) to the client.
+
+- **Security & RLS:**  
+  - Review Supabase Row Level Security (RLS) policies to ensure users can only access their own data.
+  - Protect all API endpoints from unauthorized access.
+
+- **Accessibility:**  
+  - Add ARIA labels, keyboard navigation, and ensure color contrast for all UI components.
+
+- **Performance:**  
+  - Paginate or virtualize large lists (e.g., employee stack, timeline) to avoid slow rendering.
+  - Debounce or throttle real-time updates if needed.
+
+- **Testing:**  
+  - Add unit and integration tests for hooks, helpers, and API routes.
+
+- **Edge Function Reliability:**  
+  - Monitor the nightly Edge Function for failures (missed resets can block volunteering).
+
+- **Data Consistency:**  
+  - If using `totalVolunteeredHours` as a field, ensure it is always kept in sync with the timeline (prefer DB triggers).
+
+---
+
 # VolunteerV1 – In-Depth Technical Documentation
 
 ## Overview

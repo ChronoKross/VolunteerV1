@@ -73,7 +73,7 @@ function calculateSessionMinutes(): number {
       if (!res.ok) {
         // If backend returns "Already volunteered today" error, show friendly message
         if (data.error && data.error.toLowerCase().includes('already volunteered')) {
-          setError(`${employeeName} has already volunteered today.`);
+          setError(`${employeeName} has already volunteered today, or permission denied.`);
           setErrorEmployee(employeeName);
         } else {
           setError(data.error || 'Unknown error');
