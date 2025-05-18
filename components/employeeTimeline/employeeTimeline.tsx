@@ -3,9 +3,8 @@ import { useTimeline } from "@/hooks/useTimeline"
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
-import { Clock, Moon, Sun } from "lucide-react"
+import { Clock } from "lucide-react"
 import { useTheme } from "next-themes"
-import { Button } from "@/components/ui/button"
 import { createClient } from "@/utils/supabase/client"
 import { Employee } from "@/types/employee"
 
@@ -43,7 +42,7 @@ const formatDate = (isoDate: string) => {
 }
 
 export function EmployeeTimeline() {
-  const { theme, setTheme } = useTheme()
+  const { theme } = useTheme()
   const [mounted, setMounted] = useState(false)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadingRef = useRef<HTMLDivElement>(null)
@@ -124,10 +123,6 @@ export function EmployeeTimeline() {
     show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
   }
 
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark")
-  }
-
   // Timeline connector animation
   const connectorVariants = {
     hidden: { scaleY: 0, originY: 0 },
@@ -142,19 +137,8 @@ export function EmployeeTimeline() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center sticky top-0 z-10 bg-background py-2 mb-2">
+      <div className="flex justify-center items-center sticky top-0 z-10 bg-background py-2 mb-2">
         <h2 className="text-xl font-semibold">Volunteer Timeline</h2>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={toggleTheme}
-          className="rounded-md border-gray-200 dark:border-gray-800 w-10 h-10 p-0"
-        >
-          <motion.div initial={{ opacity: 1 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
-            {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-          </motion.div>
-          <span className="sr-only">Toggle theme</span>
-        </Button>
       </div>
 
       {/* Fixed height container with scrolling */}
