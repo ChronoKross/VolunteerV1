@@ -1,12 +1,12 @@
 "use client"
+
 import { useTimeline } from "@/hooks/useTimeline"
 import { useEffect, useRef, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { Card } from "@/components/ui/card"
 import { Clock } from "lucide-react"
 import { useTheme } from "next-themes"
-import { createClient } from "@/utils/supabase/client"
-import { Employee } from "@/types/employee"
+
 
 const SkeletonLoader = () => {
   return (
@@ -41,21 +41,41 @@ const formatDate = (isoDate: string) => {
   })
 }
 
-export function EmployeeTimeline() {
+interface EmployeeTimelineProps {
+  initialTimeline: any[] // Replace `any` with your timeline entry type
+}
+
+export function EmployeeTimeline({ initialTimeline }: EmployeeTimelineProps) {
   const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const [timelineEntries, setTimelineEntries] = useState(initialTimeline || [])
+  const { timelineEntries: liveTimelineEntries, loading, hasMore, loadMore } = useTimeline(5)
+  const [mounted, setMounted] = useState(false);
+
   const observerRef = useRef<IntersectionObserver | null>(null)
   const loadingRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
 
-  const { timelineEntries, loading, hasMore, loadMore } = useTimeline(5)
+  // Update timeline entries with live data after hydration
+  useEffect(() => {
+    setTimelineEntries(liveTimelineEntries)
+  }, [liveTimelineEntries])
+
+   useEffect(() => {
+    setMounted(true);
+   }, []);
   
-
-  // Fetch employees from Supabase
- 
-
-  // Initial load
-  useEffect(() => { setMounted(true) }, [])
+   const formatDate = (isoDate: string): string => {
+    if (!mounted) return "Loading..."; // Avoid formatting during SSR
+    const date = new Date(isoDate);
+    return date.toLocaleString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      hour12: true,
+    });
+  };
 
 
   // Set up intersection observer for infinite scroll
@@ -87,27 +107,6 @@ export function EmployeeTimeline() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, hasMore])
 
-  // Map Supabase employee data to timeline format
-  // function mapEmployees(data: Employee[]): any[] {
-  //   return (data || []).map((emp) => ({
-  //     id: emp.id,
-  //     name: emp.name,
-  //     initials: emp.name
-  //       ? emp.name
-  //           .split(" ")
-  //           .map((n) => n[0])
-  //           .join("")
-  //           .substring(0, 2)
-  //           .toUpperCase()
-  //       : "EM",
-  //     profilePicture: emp.profile_pic || "/placeholder.svg?height=100&width=100",
-  //     leftTime: emp.created_at,
-  //     hoursToday: (emp.totalVolunteeredHours ?? 0).toFixed(2),
-  //     totalHours: emp.totalVolunteeredHours ?? 0,
-  //     jobTitle: emp.job_title,
-  //   }))
-  // }
-
   const container = {
     hidden: { opacity: 0 },
     show: {
@@ -123,7 +122,6 @@ export function EmployeeTimeline() {
     show: { opacity: 1, y: 0, transition: { duration: 0.4 } },
   }
 
-  // Timeline connector animation
   const connectorVariants = {
     hidden: { scaleY: 0, originY: 0 },
     visible: {
@@ -141,17 +139,18 @@ export function EmployeeTimeline() {
         <h2 className="text-xl font-semibold">Volunteer Timeline</h2>
       </div>
 
-      {/* Fixed height container with scrolling */}
       <div
         ref={timelineRef}
         className="relative h-[70vh] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent"
-        style={{
-          scrollbarWidth: "thin",
-          scrollbarColor: theme === "dark" ? "#4B5563 transparent" : "#D1D5DB transparent",
-        }}
+        style={
+          mounted
+            ? {
+              scrollbarWidth: "thin",
+              scrollbarColor: theme === "dark" ? "#4B5563 transparent" : "#D1D5DB transparent",
+            }
+            : {}}
       >
         <motion.div className="relative pl-6 sm:pl-8" variants={container} initial="hidden" animate="show">
-          {/* Timeline connector line with animation */}
           <motion.div
             className="absolute left-2 sm:left-4 top-0 bottom-0 w-0.5 bg-gray-200 dark:bg-gray-800 origin-top"
             variants={connectorVariants}
@@ -159,7 +158,6 @@ export function EmployeeTimeline() {
             animate="visible"
           />
 
-          {/* Skeleton loaders when initially loading */}
           {loading && timelineEntries.length === 0 && (
             <div className="space-y-6">
               {[...Array(3)].map((_, index) => (
@@ -168,7 +166,6 @@ export function EmployeeTimeline() {
             </div>
           )}
 
-          {/* Actual timeline entries */}
           <AnimatePresence>
             {timelineEntries.map((employee) => (
               <motion.div
@@ -217,7 +214,6 @@ export function EmployeeTimeline() {
             ))}
           </AnimatePresence>
 
-          {/* Loading indicator */}
           {hasMore && (
             <div ref={loadingRef} className="flex justify-center items-center py-4 mb-4 h-20">
               {loading && timelineEntries.length > 0 ? (

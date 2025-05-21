@@ -1,7 +1,8 @@
 import { Database } from "@/types/supabase";
+import { createClient } from "@/utils/supabase/server"
 
 
-
+//client-side 
 export async function volunteerEmployee(client: any, userId: string, sessionMinutes: number) {
   
    // Check if the employee has already volunteered
@@ -92,8 +93,7 @@ export async function volunteerEmployee(client: any, userId: string, sessionMinu
   return { newPosition: maxPosition + 1 }
 }
 
-
-// Fetch all employees
+// Fetch all employees client-side
 export async function getEmployees(client:any) {
   
   console.log('Fetching all employees...');
@@ -111,7 +111,7 @@ export async function getEmployees(client:any) {
   return data;
 }
 
-// Fetch a single employee by ID
+// Fetch a single employee by ID client-side
 export async function getEmployeeById(client:any, id: string) {
   
   console.log(`Fetching employee with ID: ${id}`);
@@ -130,6 +130,50 @@ export async function getEmployeeById(client:any, id: string) {
   console.log('Employee fetched successfully:', data);
   return data;
 }
+
+//SERVER-SIDE
+// filepath: lib/dbHelpers.ts
+//server-side
+export async function getTimelineEntriesSSR(from = 0, to = 4) {
+  const supabase = await createClient()
+  const { data, error } = await supabase
+    .from('timeline')
+    .select(`
+      *,
+      employees (
+        id,
+        name,
+        profile_pic,
+        job_title,
+        totalVolunteeredHours
+      )
+    `)
+    .order('created_at', { ascending: false })
+    .range(from, to)
+  if (error) throw error
+  return data || []
+}
+export async function getEmployeesSSR() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('employees')
+    .select('*');
+  if (error) throw error;
+  const sortedData = data.sort((a, b) => a.position - b.position);
+
+  return sortedData || [];
+}
+export async function getEmployeeByIdSSR(id: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('employees')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 
 // Fetch all shifts for a specific employee
 // export async function getShiftsByEmployeeId(employeeId: number) {

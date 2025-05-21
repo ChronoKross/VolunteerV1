@@ -8,55 +8,65 @@ import { Clock } from 'lucide-react'
 import { ThemeSwitcher } from '@/components/theme-switcher'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useEffect } from 'react'
+import type { Employee } from '@/types/employee'
 
+interface EmployeeStackProps {
+  initialEmployees: Employee[]
+}
 
-
-export default function EmployeeStack() {
-  const employees = useQueue()
-  const [mounted, setMounted] = useState(false)
+export default function EmployeeStack({ initialEmployees }: EmployeeStackProps) {
+  const [employees, setEmployees] = useState<Employee[]>(initialEmployees || [])
+  const queue = useQueue()
   const { theme } = useTheme()
   const [error, setError] = useState<string | null>(null)
   const [errorEmployee, setErrorEmployee] = useState<string | null>(null)
+  const [hasMounted, setHasMounted] = useState(false);
 
-function calculateSessionMinutes(): number {
-  const now = new Date();
 
-  // Get today's 7pm
-  const shiftStart = new Date(now);
-  shiftStart.setHours(19, 0, 0, 0);
+  // After hydration, update employees with live queue
+  useEffect(() => {
+    setEmployees(queue)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [JSON.stringify(queue)])
 
-  // Get tomorrow's 7am
-  const shiftEnd = new Date(shiftStart);
-  shiftEnd.setDate(shiftEnd.getDate() + 1);
-  shiftEnd.setHours(7, 0, 0, 0);
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
 
-  // If now is between 7pm and midnight
-  if (now >= shiftStart && now < shiftEnd) {
-    return Math.floor((shiftEnd.getTime() - now.getTime()) / 60000);
+  useEffect(() => {
+    console.log("SSR employees:", initialEmployees);
+    console.log("Client queue:", queue);
+  }, [initialEmployees, queue]);
+
+  function calculateSessionMinutes(): number {
+    const now = new Date();
+    const shiftStart = new Date(now);
+    shiftStart.setHours(19, 0, 0, 0);
+    const shiftEnd = new Date(shiftStart);
+    shiftEnd.setDate(shiftEnd.getDate() + 1);
+    shiftEnd.setHours(7, 0, 0, 0);
+    if (now >= shiftStart && now < shiftEnd) {
+      return Math.floor((shiftEnd.getTime() - now.getTime()) / 60000);
+    }
+    const prevShiftStart = new Date(shiftStart);
+    prevShiftStart.setDate(prevShiftStart.getDate() - 1);
+    const prevShiftEnd = new Date(prevShiftStart);
+    prevShiftEnd.setDate(prevShiftEnd.getDate() + 1);
+    prevShiftEnd.setHours(7, 0, 0, 0);
+    const midnight = new Date(prevShiftEnd);
+    midnight.setHours(0, 0, 0, 0);
+    if (now >= midnight && now < prevShiftEnd) {
+      return Math.floor((prevShiftEnd.getTime() - now.getTime()) / 60000);
+    }
+    return 0;
   }
 
-  // If now is between midnight and 7am (same shift, but after midnight)
-  const prevShiftStart = new Date(shiftStart);
-  prevShiftStart.setDate(prevShiftStart.getDate() - 1); // yesterday 7pm
-  const prevShiftEnd = new Date(prevShiftStart);
-  prevShiftEnd.setDate(prevShiftEnd.getDate() + 1);
-  prevShiftEnd.setHours(7, 0, 0, 0);
-
-  const midnight = new Date(prevShiftEnd);
-  midnight.setHours(0, 0, 0, 0);
-  if (now >= midnight && now < prevShiftEnd) {
-    return Math.floor((prevShiftEnd.getTime() - now.getTime()) / 60000);
-  }
-
-  // Not in shift window
-  return 0;
-}
   const getColorSaturation = (hours: number) => {
     const percentage = Math.min(hours / 50, 1) * 100
     return percentage
   }
 
-  const volunteer = async (userId: string, sessionMinutes:number, employeeName: string) => {
+  const volunteer = async (userId: string, sessionMinutes: number, employeeName: string) => {
     try {
       const res = await fetch('/api/employee', {
         method: 'POST',
@@ -67,11 +77,8 @@ function calculateSessionMinutes(): number {
           sessionMinutes,
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
-        // If backend returns "Already volunteered today" error, show friendly message
         if (data.error && data.error.toLowerCase().includes('already volunteered')) {
           setError(`${employeeName} has already volunteered today, or permission denied.`);
           setErrorEmployee(employeeName);
@@ -80,22 +87,14 @@ function calculateSessionMinutes(): number {
           setErrorEmployee(employeeName);
         }
         throw new Error(data.error || 'Unknown error');
-      }
-
+      };
       setError(null);
       setErrorEmployee(null);
       console.log('✅ Volunteer success:', data);
     } catch (err) {
       console.error('❌ Volunteer failed:', err);
-      // Error state already set above
-    }
+    };
   };
-  
-  useEffect(() => {
-    setMounted(true)
-  }, [])
- 
-
 
   return (
     <div className="dark:from-slate-900 dark:via-blue-950 dark:to-violet-950">
@@ -104,8 +103,6 @@ function calculateSessionMinutes(): number {
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white"></h1>
           <ThemeSwitcher />
         </div>
-
-        {/* Error message */}
         {error && (
           <div className="mb-4 p-3 rounded bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200 border border-red-300 dark:border-red-700">
             {error}
@@ -117,12 +114,30 @@ function calculateSessionMinutes(): number {
             </button>
           </div>
         )}
-
         <div className="space-y-3">
           <AnimatePresence>
             {employees.map((employee, index) => {
-              const saturation = getColorSaturation(employee.totalVolunteeredHours)
-
+              const saturation = getColorSaturation(employee.totalVolunteeredHours);
+              // Only use theme-dependent styles after mount
+              const style = hasMounted
+                ? {
+                    backgroundColor:
+                      theme === "dark"
+                        ? `hsla(250, ${saturation}%, 30%, 0.8)`
+                        : `hsla(210, ${saturation}%, 85%, 0.8)`,
+                    color:
+                      theme === "dark"
+                        ? "#C7AFFF"
+                        : `hsl(210, ${Math.max(saturation, 60)}%, ${Math.max(30, 50 - saturation / 2)}%)`,
+                    borderColor:
+                      theme === "dark"
+                        ? `hsla(250, ${saturation}%, 40%, 0.8)`
+                        : `hsla(210, ${saturation}%, 70%, 0.8)`,
+                    borderWidth: "1px",
+                    borderStyle: "solid",
+                    transition: "all 0.3s ease",
+                  }
+                : {};
               return (
                 <motion.div
                   key={employee.id}
@@ -162,23 +177,7 @@ function calculateSessionMinutes(): number {
                     </div>
                     <div
                       className="flex items-center gap-1 px-2 py-1 rounded-full"
-                      style={{
-                        backgroundColor:
-                          theme === "dark"
-                            ? `hsla(250, ${saturation}%, 30%, 0.8)`
-                            : `hsla(210, ${saturation}%, 85%, 0.8)`,
-                        color:
-                          theme === "dark"
-                            ? "#C7AFFF" // Adjusted for dark mode
-                            : `hsl(210, ${Math.max(saturation, 60)}%, ${Math.max(30, 50 - saturation / 2)}%)`,
-                        borderColor:
-                          theme === "dark"
-                            ? `hsla(250, ${saturation}%, 40%, 0.8)`
-                            : `hsla(210, ${saturation}%, 70%, 0.8)`,
-                        borderWidth: "1px",
-                        borderStyle: "solid",
-                        transition: "all 0.3s ease",
-                      }}
+                      style={style}
                     >
                       <Clock className="h-4 w-4" />
                       <span className="text-sm font-medium">{Number(employee.totalVolunteeredHours ?? 0).toFixed(2)} hrs</span>
@@ -192,4 +191,4 @@ function calculateSessionMinutes(): number {
       </div>
     </div>
   )
-}
+};

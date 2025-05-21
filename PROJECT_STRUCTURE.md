@@ -1,5 +1,9 @@
 # 🚩 Things To Fix & Safety Concerns
 
+TODO
+
+FIRST RENDER NEEDS TO BE SSR... atm we send blank html, then fetch the data and serve back to client... veryl slow first paint..
+
 - **File Naming Consistency:**  
   - Rename files like `googleSignInButton.tsx.tsx` to `GoogleSignInButton.tsx`.
   - Use PascalCase for React components and camelCase for hooks/utilities.
